@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Update your info · BRYC</title>
+    <!--
+      ═══════════════════  ALUM FORM SETTINGS — the only line you edit  ═══════════════════
+      The same Apps Script web app URL as index.html. Not a secret: the page holds
+      no data, and each alum's private link decides what they can see.
+    -->
+    <script>
+      window.ALUM_FORM_CONFIG = {
+        appsScriptUrl: 'https://script.google.com/macros/s/AKfycbydRpXyAJXzHs1czwuyCFz-4So4Aw4VkTD9MVk1r6bq9DWg3bcR5_MooqbLuDhvyk5m/exec',
+      }
+    </script>
+    <!-- ══════════════════════════════════════════════════════════════════════════════════ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --navy: #282561;
+        --violet: #393086;
+        --purple: #4e459c;
+        --soft: #6159a0;
+        --lavender: #8478b8;
+        --muted: #a99ecd;
+        --lilac: #e2d7ea;
+        --mist: #f6f2f9;
+        --ink: #1f1d3d;
+        --grey: #5b5873;
+        --warn-bg: #fff7e6;
+        --warn: #8a5300;
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body { margin: 0; background: var(--mist); color: var(--ink); font: 16px/1.5 "proxima-nova", Arial, Helvetica, sans-serif; }
+      .bar { background: var(--navy); color: #fff; padding: 14px 20px; }
+      .bar b { font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif; font-size: 26px; letter-spacing: 0.04em; }
+      main { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+      h1 { font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif; font-size: 34px; line-height: 1.1; color: var(--navy); margin: 8px 0 8px; }
+      h2 { font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif; font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--violet); margin: 0 0 12px; }
+      p { margin: 0 0 12px; }
+      .lead { color: var(--grey); }
+      .card { background: #fff; border: 1px solid var(--lilac); border-radius: 16px; padding: 18px; margin: 16px 0; }
+      .field { margin: 0 0 14px; }
+      .field:last-child { margin-bottom: 0; }
+      label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #33304f; margin-bottom: 4px; }
+      .tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--violet); background: var(--lilac); border-radius: 4px; padding: 1px 6px; }
+      .undo { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--soft); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+      input, textarea { width: 100%; font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--muted); border-radius: 10px; padding: 11px 12px; }
+      input:focus, textarea:focus { outline: 3px solid rgba(132, 120, 184, 0.35); border-color: var(--lavender); }
+      input.changed, textarea.changed { border-color: var(--violet); background: #faf8fd; }
+      .hint { font-size: 13px; color: var(--warn); margin-top: 4px; }
+      .was { font-size: 12px; color: var(--grey); margin-top: 3px; }
+      .add { width: 100%; text-align: left; font: inherit; font-weight: 700; color: var(--violet); background: #fff; border: 1px dashed var(--muted); border-radius: 16px; padding: 14px 18px; margin: 16px 0; cursor: pointer; }
+      .btn { display: block; width: 100%; font: inherit; font-weight: 700; font-size: 17px; color: #fff; background: var(--violet); border: 0; border-radius: 12px; padding: 15px 18px; cursor: pointer; }
+      .btn:hover { background: var(--purple); }
+      .btn:disabled { opacity: 0.6; cursor: wait; }
+      .small { font-size: 13px; color: var(--grey); }
+      .notice { background: var(--warn-bg); border: 1px solid #f1d39b; color: #5c3b00; border-radius: 12px; padding: 14px 16px; }
+      .done { text-align: center; padding: 28px 18px; }
+      .done .big { font-size: 44px; line-height: 1; margin-bottom: 8px; color: var(--violet); }
+      .spinner { width: 28px; height: 28px; border: 3px solid var(--lilac); border-top-color: var(--violet); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 40px auto 12px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    </style>
+  </head>
+  <body>
+    <div class="bar"><b>BRYC</b></div>
+    <main id="app" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="lead" style="text-align: center">Loading your info…</p>
+    </main>
+
+    <script>
+      ;(function () {
+        'use strict'
+        var cfg = window.ALUM_FORM_CONFIG || {}
+        var url = /^https:\/\/\S+\/exec$/.test(cfg.appsScriptUrl || '') ? cfg.appsScriptUrl : ''
+        var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+        var app = document.getElementById('app')
+
+        // The private code arrives after "#t=". Keep it for this tab only, then take it out of the address bar.
+        var m = location.hash.match(/[#&]t=([A-Za-z0-9_-]+)/)
+        var token = m ? m[1] : ''
+        try {
+          if (token) sessionStorage.setItem('bryc-alum-link', token)
+          else token = sessionStorage.getItem('bryc-alum-link') || ''
+        } catch (e) {}
+        if (m && history.replaceState) history.replaceState(null, '', location.pathname)
+
+        function esc(s) {
+          return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+          })
+        }
+
+        function call(action, body) {
+          body = Object.assign({ action: action, token: token }, body || {})
+          var req = url
+            ? fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' })
+            : local
+              ? fetch('/api', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Dossier-Client': '1' }, body: JSON.stringify(body) })
+              : Promise.reject(Object.assign(new Error('This form isn’t connected yet.'), { code: 'SETUP' }))
+          return req
+            .then(function (r) { return r.json() })
+            .then(function (d) {
+              if (!d.ok) throw Object.assign(new Error(d.message || 'Something went wrong.'), { code: d.code, help: d.help })
+              return d
+            })
+        }
+
+        function problem(err) {
+          var help = err.help ? ' You can also email <a href="mailto:' + esc(err.help) + '">' + esc(err.help) + '</a>.' : ''
+          var title = { LINK_USED: 'Thanks, we already have it', LINK_EXPIRED: 'This link has expired', LINK_INVALID: 'This link doesn’t work' }[err.code] || 'Something went wrong'
+          app.innerHTML =
+            '<h1>' + esc(title) + '</h1><div class="notice"><p style="margin:0">' + esc(err.message) + help + '</p></div>' +
+            (err.code && /^LINK_/.test(err.code) ? '' : '<p class="small" style="margin-top:12px">Please try again in a few minutes.</p>')
+        }
+
+        if (!token) {
+          problem({ code: 'LINK_INVALID', message: 'This page needs your personal link from BRYC. Open the link from your email or text message.' })
+          return
+        }
+
+        var data = null
+        var original = {}
+        var openBlocks = {}
+
+        call('alum_get')
+          .then(function (d) {
+            data = d
+            d.sections.forEach(function (s) { s.fields.forEach(function (f) { original[f.key] = f.value }) })
+            render()
+          })
+          .catch(problem)
+
+        function inputType(t) {
+          return { email: 'email', phone: 'tel', url: 'url' }[t] || 'text'
+        }
+
+        function check(f, v) {
+          v = (v || '').trim()
+          if (!v) return ''
+          if (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'That doesn’t look like an email address.'
+          if (f.type === 'phone' && v.replace(/\D/g, '').length < 10) return 'Please include the area code.'
+          if (f.type === 'year' && !/^\d{4}$/.test(v)) return 'Use a 4-digit year, like 2027.'
+          return ''
+        }
+
+        function fieldHtml(f) {
+          var id = 'f-' + f.key
+          var list = f.suggestions && f.suggestions.length ? ' list="' + id + '-list"' : ''
+          var mode = f.type === 'year' ? ' inputmode="numeric"' : ''
+          return (
+            '<div class="field" data-key="' + esc(f.key) + '">' +
+            '<label for="' + id + '">' + esc(f.label) + '<span class="tag" hidden>Updated</span><button type="button" class="undo" hidden>Undo</button></label>' +
+            '<input id="' + id + '" name="' + esc(f.key) + '" type="' + inputType(f.type) + '"' + mode + list + ' value="' + esc(f.value) + '" autocomplete="off" />' +
+            (list ? '<datalist id="' + id + '-list">' + f.suggestions.map(function (s) { return '<option value="' + esc(s) + '"></option>' }).join('') + '</datalist>' : '') +
+            '<div class="was" hidden></div><div class="hint" hidden></div></div>'
+          )
+        }
+
+        function render() {
+          var expires = new Date(data.expires).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+          var html =
+            '<h1>Hi ' + esc(data.firstName || 'there') + '!</h1>' +
+            '<p class="lead">We’d love to stay in touch. Look over what BRYC has on file, fix anything that’s changed, and press the button at the bottom. Leave anything blank that you’d rather not share.</p>' +
+            '<form id="form" novalidate>'
+          var firstEmptyShown = false
+          data.sections.forEach(function (s, i) {
+            var empty = s.fields.every(function (f) { return !f.value })
+            if (s.credential && empty && !openBlocks[i]) {
+              if (!firstEmptyShown) {
+                firstEmptyShown = true
+                html += '<button type="button" class="add" data-open="' + i + '">+ Add ' + (data.sections.some(function (x) { return x.credential && x.fields.some(function (f) { return f.value }) }) ? 'another' : 'an') + ' advanced degree</button>'
+              }
+              return
+            }
+            html += '<section class="card" data-block="' + i + '"><h2>' + esc(s.title) + '</h2>' + s.fields.map(fieldHtml).join('') + '</section>'
+          })
+          html +=
+            '<section class="card"><h2>Anything else?</h2><div class="field"><label for="note">A note for BRYC (optional)</label>' +
+            '<textarea id="note" rows="3" maxlength="1000" placeholder="News, a new job, a question…"></textarea></div></section>' +
+            '<div class="notice" id="oops" hidden style="margin-bottom:12px">We couldn’t send that. Please check your connection and try again.</div>' +
+            '<button class="btn" id="go" type="submit">Everything is correct</button>' +
+            '<p class="small" style="margin-top:12px">BRYC staff look over every update before it’s saved. This private link works until ' + esc(expires) + '. Please don’t forward it.</p>' +
+            '</form>'
+          app.innerHTML = html
+
+          var form = document.getElementById('form')
+          Array.prototype.forEach.call(form.querySelectorAll('.add'), function (b) {
+            b.addEventListener('click', function () {
+              keepTyped()
+              var i = b.getAttribute('data-open')
+              openBlocks[i] = true
+              render()
+              var first = document.querySelector('[data-block="' + i + '"] input')
+              if (first) first.focus()
+            })
+          })
+          Array.prototype.forEach.call(form.querySelectorAll('.field[data-key]'), function (el) {
+            var key = el.getAttribute('data-key')
+            var input = el.querySelector('input')
+            var f = findField(key)
+            if (typed[key] !== undefined) input.value = typed[key]
+            var sync = function () {
+              var changed = input.value.trim() !== (original[key] || '').trim()
+              input.classList.toggle('changed', changed)
+              el.querySelector('.tag').hidden = !changed
+              el.querySelector('.undo').hidden = !changed
+              var was = el.querySelector('.was')
+              was.hidden = !(changed && original[key])
+              was.textContent = 'Was: ' + (original[key] || '')
+              var hint = check(f, input.value)
+              el.querySelector('.hint').hidden = !hint
+              el.querySelector('.hint').textContent = hint
+              updateButton()
+            }
+            input.addEventListener('input', sync)
+            el.querySelector('.undo').addEventListener('click', function () { input.value = original[key] || ''; sync(); input.focus() })
+            sync()
+          })
+          if (typed.__note) document.getElementById('note').value = typed.__note
+          form.addEventListener('submit', submit)
+          updateButton()
+        }
+
+        var typed = {}
+        function keepTyped() {
+          Array.prototype.forEach.call(document.querySelectorAll('.field[data-key] input'), function (i) { typed[i.name] = i.value })
+          var note = document.getElementById('note')
+          if (note) typed.__note = note.value
+        }
+
+        function findField(key) {
+          for (var i = 0; i < data.sections.length; i++) for (var j = 0; j < data.sections[i].fields.length; j++) if (data.sections[i].fields[j].key === key) return data.sections[i].fields[j]
+          return {}
+        }
+
+        function changes() {
+          var out = {}
+          Array.prototype.forEach.call(document.querySelectorAll('.field[data-key] input'), function (i) {
+            if (i.value.trim() !== (original[i.name] || '').trim()) out[i.name] = i.value.trim()
+          })
+          return out
+        }
+
+        function updateButton() {
+          var n = Object.keys(changes()).length
+          var note = (document.getElementById('note') || {}).value || ''
+          var btn = document.getElementById('go')
+          if (btn) btn.textContent = n ? 'Send ' + n + (n === 1 ? ' update' : ' updates') : note.trim() ? 'Send my note' : 'Everything is correct'
+        }
+        document.addEventListener('input', function (e) { if (e.target && e.target.id === 'note') updateButton() })
+
+        function submit(e) {
+          e.preventDefault()
+          var btn = document.getElementById('go')
+          btn.disabled = true
+          btn.textContent = 'Sending…'
+          document.getElementById('oops').hidden = true
+          var c = changes()
+          var n = Object.keys(c).length
+          call('alum_submit', { changes: c, note: document.getElementById('note').value })
+            .then(function () {
+              try { sessionStorage.removeItem('bryc-alum-link') } catch (err) {}
+              app.innerHTML =
+                '<div class="card done"><div class="big">✓</div><h1>Thank you, ' + esc(data.firstName || 'friend') + '!</h1>' +
+                '<p class="lead">' + (n ? 'We got your updates. A BRYC staff member will look them over soon.' : 'Thanks for confirming your info. It helps us stay in touch.') + '</p></div>'
+              window.scrollTo(0, 0)
+            })
+            .catch(function (err) {
+              btn.disabled = false
+              updateButton()
+              if (err.code && /^LINK_/.test(err.code)) return problem(err)
+              document.getElementById('oops').hidden = false
+            })
+        }
+      })()
+    </script>
+  </body>
+</html>
