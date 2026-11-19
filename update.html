@@ -54,6 +54,19 @@
       input, textarea { width: 100%; font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--muted); border-radius: 10px; padding: 11px 12px; }
       input:focus, textarea:focus { outline: 3px solid rgba(132, 120, 184, 0.35); border-color: var(--lavender); }
       input.changed, textarea.changed { border-color: var(--violet); background: #faf8fd; }
+      select { width: 100%; font: inherit; color: var(--ink); border: 1px solid var(--muted); border-radius: 10px; padding: 11px 38px 11px 12px; -webkit-appearance: none; appearance: none;
+        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23393086' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center / 13px; }
+      select:focus { outline: 3px solid rgba(132, 120, 184, 0.35); border-color: var(--lavender); }
+      select.changed { border-color: var(--violet); background-color: #faf8fd; }
+      .other-input { margin-top: 8px; }
+      .ex { font-size: 13px; color: var(--grey); margin: -2px 0 6px; }
+      .ta-wrap { position: relative; }
+      .ta { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 10; list-style: none; margin: 0; padding: 4px; max-height: 300px; overflow-y: auto;
+        background: #fff; border: 1px solid var(--muted); border-radius: 10px; box-shadow: 0 10px 28px rgba(31, 29, 61, 0.16); }
+      .ta li { padding: 10px; border-radius: 8px; cursor: pointer; line-height: 1.3; }
+      .ta li[aria-selected='true'], .ta li:hover { background: var(--mist); }
+      .ta li small { display: block; font-size: 12px; color: var(--grey); }
+      .ta li.none { cursor: default; font-size: 14px; color: var(--grey); background: none; }
       .hint { font-size: 13px; color: var(--warn); margin-top: 4px; }
       .was { font-size: 12px; color: var(--grey); margin-top: 3px; }
       .add { width: 100%; text-align: left; font: inherit; font-weight: 700; color: var(--violet); background: #fff; border: 1px dashed var(--muted); border-radius: 16px; padding: 14px 18px; margin: 16px 0; cursor: pointer; }
@@ -154,15 +167,147 @@
 
         function fieldHtml(f) {
           var id = 'f-' + f.key
-          var list = f.suggestions && f.suggestions.length ? ' list="' + id + '-list"' : ''
-          var mode = f.type === 'year' ? ' inputmode="numeric"' : ''
-          return (
-            '<div class="field" data-key="' + esc(f.key) + '">' +
+          var head =
             '<label for="' + id + '">' + esc(f.label) + '<span class="tag" hidden>Updated</span><button type="button" class="undo" hidden>Undo</button></label>' +
-            '<input id="' + id + '" name="' + esc(f.key) + '" type="' + inputType(f.type) + '"' + mode + list + ' value="' + esc(f.value) + '" autocomplete="off" />' +
-            (list ? '<datalist id="' + id + '-list">' + f.suggestions.map(function (s) { return '<option value="' + esc(s) + '"></option>' }).join('') + '</datalist>' : '') +
-            '<div class="was" hidden></div><div class="hint" hidden></div></div>'
-          )
+            (f.example ? '<div class="ex" id="' + id + '-ex">For example: ' + esc(f.example) + '</div>' : '')
+          var described = f.example ? ' aria-describedby="' + id + '-ex"' : ''
+          var box
+          if (f.input === 'select') {
+            var opts = (f.options || []).slice()
+            var cur = f.value || ''
+            // Keep what's on file selectable, even if it isn't on the list.
+            if (cur && !opts.some(function (o) { return o.toLowerCase() === cur.toLowerCase() })) opts.unshift(cur)
+            box =
+              '<select id="' + id + '" name="' + esc(f.key) + '"' + described + '><option value="">Choose one</option>' +
+              opts.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>' }).join('') +
+              (f.other ? '<option value="__other">Other (type it in)</option>' : '') +
+              '</select>' +
+              (f.other ? '<input class="other-input" type="text" aria-label="' + esc(f.label) + ': other" placeholder="Type your answer" autocomplete="off" maxlength="200" hidden />' : '')
+          } else if (f.input === 'typeahead') {
+            box =
+              '<div class="ta-wrap"><input id="' + id + '" name="' + esc(f.key) + '" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="' + id + '-list"' + described +
+              ' value="' + esc(f.value) + '" autocomplete="off" placeholder="Start typing" />' +
+              '<ul class="ta" id="' + id + '-list" role="listbox" hidden></ul></div>'
+          } else {
+            var mode = f.type === 'year' ? ' inputmode="numeric"' : ''
+            box =
+              '<input id="' + id + '" name="' + esc(f.key) + '" type="' + inputType(f.type) + '"' + mode + described + ' value="' + esc(f.value) + '" autocomplete="off"' +
+              (f.example ? ' placeholder="' + esc(f.example) + '"' : '') + ' />'
+          }
+          return '<div class="field" data-key="' + esc(f.key) + '">' + head + box + '<div class="was" hidden></div><div class="hint" hidden></div></div>'
+        }
+
+        // What a field holds right now, whatever kind of box it is.
+        function readField(el) {
+          var sel = el.querySelector('select')
+          if (sel) return sel.value === '__other' ? el.querySelector('.other-input').value : sel.value
+          return el.querySelector('input').value
+        }
+
+        function writeField(el, v) {
+          v = v || ''
+          var sel = el.querySelector('select')
+          if (!sel) { el.querySelector('input').value = v; return }
+          var other = el.querySelector('.other-input')
+          var hit = Array.prototype.filter.call(sel.options, function (o) { return o.value !== '__other' && o.value.toLowerCase() === v.toLowerCase() })[0]
+          if (hit || !v || !other) {
+            sel.value = hit ? hit.value : ''
+            if (other) { other.hidden = true; other.value = '' }
+          } else {
+            sel.value = '__other'
+            other.hidden = false
+            other.value = v
+          }
+        }
+
+        function differs(el, key) {
+          var sel = el.querySelector('select')
+          if (sel && sel.value === '__other' && !el.querySelector('.other-input').value.trim()) return false // picked Other, hasn't typed yet
+          var now = readField(el).trim()
+          var was = (original[key] || '').trim()
+          return el.querySelector('select') ? now.toLowerCase() !== was.toLowerCase() : now !== was
+        }
+
+        function norm(s) {
+          return String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim()
+        }
+
+        // Best matches first: starts with what they typed, then a word that does, then anywhere.
+        function matches(choices, q) {
+          q = norm(q)
+          if (!q) return []
+          var hits = []
+          ;(choices || []).forEach(function (c) {
+            var best = -1
+            var via = ''
+            ;[c.value].concat(c.also || []).forEach(function (name, i) {
+              var t = norm(name)
+              var at = t.indexOf(q)
+              if (at < 0) return
+              var score = (at === 0 ? 0 : t.charAt(at - 1) === ' ' ? 1 : 2) + (i ? 0.5 : 0)
+              if (best < 0 || score < best) { best = score; via = i ? name : '' }
+            })
+            if (best >= 0) hits.push({ value: c.value, via: via, score: best })
+          })
+          hits.sort(function (x, y) { return x.score - y.score || x.value.localeCompare(y.value) })
+          return hits.slice(0, 8)
+        }
+
+        function typeahead(el, f, sync) {
+          var input = el.querySelector('input')
+          var list = el.querySelector('.ta')
+          var shown = []
+          var active = -1
+          var close = function () {
+            list.hidden = true
+            input.setAttribute('aria-expanded', 'false')
+            input.removeAttribute('aria-activedescendant')
+            active = -1
+          }
+          var choose = function (i) {
+            if (!shown[i]) return
+            input.value = shown[i].value
+            close()
+            sync()
+          }
+          var paint = function () {
+            Array.prototype.forEach.call(list.children, function (li, i) { li.setAttribute('aria-selected', i === active ? 'true' : 'false') })
+            if (active >= 0) {
+              input.setAttribute('aria-activedescendant', list.children[active].id)
+              list.children[active].scrollIntoView({ block: 'nearest' })
+            } else input.removeAttribute('aria-activedescendant')
+          }
+          var open = function () {
+            var q = input.value
+            shown = matches(f.choices, q)
+            active = -1
+            if (!norm(q) || (shown.length === 1 && norm(shown[0].value) === norm(q))) return close()
+            list.innerHTML = shown.length
+              ? shown.map(function (h, i) {
+                  return '<li role="option" id="' + input.id + '-o' + i + '" data-i="' + i + '" aria-selected="false">' + esc(h.value) + (h.via ? '<small>' + esc(h.via) + '</small>' : '') + '</li>'
+                }).join('')
+              : '<li class="none" aria-disabled="true">Not on the list? That’s fine, just type the full name.</li>'
+            list.hidden = false
+            input.setAttribute('aria-expanded', 'true')
+            // On a phone the keyboard covers the bottom of the screen: move the box up so the choices show.
+            var room = window.visualViewport ? window.visualViewport.height : window.innerHeight
+            var bottom = list.getBoundingClientRect().bottom
+            if (bottom > room - 8) window.scrollBy(0, Math.min(bottom - room + 16, el.getBoundingClientRect().top - 12))
+          }
+          input.addEventListener('input', open)
+          input.addEventListener('blur', function () { setTimeout(close, 150) })
+          list.addEventListener('mousedown', function (e) { e.preventDefault() }) // keep the cursor in the box on a computer
+          list.addEventListener('click', function (e) {
+            var li = e.target.closest('li[data-i]')
+            if (li) choose(Number(li.getAttribute('data-i')))
+          })
+          input.addEventListener('keydown', function (e) {
+            if (list.hidden || !shown.length) return
+            if (e.key === 'ArrowDown') { active = (active + 1) % shown.length; paint(); e.preventDefault() }
+            else if (e.key === 'ArrowUp') { active = active <= 0 ? shown.length - 1 : active - 1; paint(); e.preventDefault() }
+            else if (e.key === 'Enter' && active >= 0) { choose(active); e.preventDefault() }
+            else if (e.key === 'Escape') close()
+          })
         }
 
         function render() {
@@ -199,30 +344,45 @@
               var i = b.getAttribute('data-open')
               openBlocks[i] = true
               render()
-              var first = document.querySelector('[data-block="' + i + '"] input')
+              var first = document.querySelector('[data-block="' + i + '"] input:not([hidden]), [data-block="' + i + '"] select')
               if (first) first.focus()
             })
           })
           Array.prototype.forEach.call(form.querySelectorAll('.field[data-key]'), function (el) {
             var key = el.getAttribute('data-key')
-            var input = el.querySelector('input')
             var f = findField(key)
-            if (typed[key] !== undefined) input.value = typed[key]
+            var sel = el.querySelector('select')
+            var other = el.querySelector('.other-input')
+            var box = sel || el.querySelector('input')
+            writeField(el, typed[key] !== undefined ? typed[key] : original[key])
             var sync = function () {
-              var changed = input.value.trim() !== (original[key] || '').trim()
-              input.classList.toggle('changed', changed)
+              var changed = differs(el, key)
+              box.classList.toggle('changed', changed)
+              if (other) other.classList.toggle('changed', changed)
               el.querySelector('.tag').hidden = !changed
               el.querySelector('.undo').hidden = !changed
               var was = el.querySelector('.was')
               was.hidden = !(changed && original[key])
               was.textContent = 'Was: ' + (original[key] || '')
-              var hint = check(f, input.value)
+              var hint = check(f, readField(el))
               el.querySelector('.hint').hidden = !hint
               el.querySelector('.hint').textContent = hint
               updateButton()
             }
-            input.addEventListener('input', sync)
-            el.querySelector('.undo').addEventListener('click', function () { input.value = original[key] || ''; sync(); input.focus() })
+            if (sel) {
+              sel.addEventListener('change', function () {
+                if (other) {
+                  other.hidden = sel.value !== '__other'
+                  if (!other.hidden) other.focus()
+                }
+                sync()
+              })
+              if (other) other.addEventListener('input', sync)
+            } else {
+              box.addEventListener('input', sync)
+              if (f.input === 'typeahead') typeahead(el, f, sync)
+            }
+            el.querySelector('.undo').addEventListener('click', function () { writeField(el, original[key]); sync(); box.focus() })
             sync()
           })
           if (typed.__note) document.getElementById('note').value = typed.__note
@@ -232,7 +392,7 @@
 
         var typed = {}
         function keepTyped() {
-          Array.prototype.forEach.call(document.querySelectorAll('.field[data-key] input'), function (i) { typed[i.name] = i.value })
+          Array.prototype.forEach.call(document.querySelectorAll('.field[data-key]'), function (el) { typed[el.getAttribute('data-key')] = readField(el) })
           var note = document.getElementById('note')
           if (note) typed.__note = note.value
         }
@@ -244,8 +404,9 @@
 
         function changes() {
           var out = {}
-          Array.prototype.forEach.call(document.querySelectorAll('.field[data-key] input'), function (i) {
-            if (i.value.trim() !== (original[i.name] || '').trim()) out[i.name] = i.value.trim()
+          Array.prototype.forEach.call(document.querySelectorAll('.field[data-key]'), function (el) {
+            var key = el.getAttribute('data-key')
+            if (differs(el, key)) out[key] = readField(el).trim()
           })
           return out
         }
